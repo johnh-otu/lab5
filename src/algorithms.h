@@ -4,8 +4,8 @@
 #define ALGORITHMS_HEADER_GUARD
 
 //SAFETY ALGORITHM
-bool isSafeState(int* Available, int** Max, int **Allocation, int **Need, pthread_mutex_t lock);
+bool isSafeState(int* Available, int** Max, int **Allocation, int **Need);
 //RESOURCE SAFE-TO-REQUEST ALGORITHM
-bool safeToGrant(int* request, int* Available, int **Allocation, int **Need, pthread_mutex_t lock);
+bool safeToGrant(int* request, int* Available, int **Allocation, int **Need);
 
 #endif
