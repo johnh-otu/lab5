@@ -1,118 +1,93 @@
 #include "main.h"
-#include "data_structures/queue.h"
-#include "loader/loader.h"
-#include "schedulers/LTscheduler.h"
-#include "schedulers/MTscheduler.h"
-#include "schedulers/STscheduler.h"
+#include "algorithms.h"
 
-struct queue job_dispatch_list;
-struct queue RT_queue; //real-time processes
-struct queue UJ_queue; //user job queue
-struct queue P1_queue; //priority 1
-struct queue P2_queue; //priority 2
-struct queue P3_queue; //priority 3
+void initializeVectors();
+void outputUsageMessage(char** argv);
+bool toInteger(char* str, int* output);
+void* thread_runner();
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t loading_finished = PTHREAD_COND_INITIALIZER;
 
-pthread_mutex_t jdl_lock = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t RT_lock = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t UJ_lock = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t P1_lock = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t P2_lock = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t P3_lock = PTHREAD_MUTEX_INITIALIZER;
+int* Available;
+int** Max;
+int** Allocation;
+int** Need;
 
-int Njobs = 0;
-int Ncompletedjobs = 0;
-bool DONE_FLAG = false;
-
-int main() {
-
-	//get dispatch file path and check
-	char file_path[MAXPATHSIZE];
-	FILE *fp;
-
-	printf("Please enter a file path for the dispatch list: ");
-	scanf("%s", file_path);
-	fp = fopen(file_path, "r");
-
-	if (fp == NULL) {
-		printf("Failed to open file or file does not exist.\n");
-		exit(EXIT_FAILURE);
-	} else {
-		fclose(fp); //file can be opened
+int main(int argc, char** argv) 
+{
+	//check input format
+	if (argc != NRESOURCES + 1) {
+		outputUsageMessage(argv);
+		return -1;
+	}
+	
+	initializeVectors();
+	
+	//try setting input as available resources
+	if (!toInteger(argv[1], &(Available[0])) || !toInteger(argv[2], &(Available[1])) || !toInteger(argv[3], &(Available[2]))) {
+		return -1;
 	}
 
-	//initialize queue locks
-	job_dispatch_list.lock = &jdl_lock;
-	RT_queue.lock = &RT_lock;
-	UJ_queue.lock = &UJ_lock;
-	P1_queue.lock = &P1_lock;
-	P2_queue.lock = &P2_lock;
-	P3_queue.lock = &P3_lock;
+	return 0;
+}
 
-	//declare thread ids
-	pthread_t tid_loader, tid_LTscheduler, tid_MTscheduler, tid_STscheduler;
-	
-	//declare/init max_load_time
-	int max_load_time = 0; //max arrival time value, dynamically set by loader after file is read
+void* thread_runner()
+{
+	return NULL;
+}
 
-	//prep loader thread
-	struct loader_thread_data* loader_data = malloc(sizeof(struct loader_thread_data));
-	loader_data->job_queue = &job_dispatch_list;
-	loader_data->lock = &lock;
-	loader_data->condition = &loading_finished;
-	loader_data->max_load_time = &max_load_time;
-	loader_data->num_processes = &Njobs;
-	strcpy(loader_data->path, file_path);
+void initializeVectors()
+{
+	//allocate Memory to Each Vector/Matrix
+	Available = (int *)malloc(NRESOURCES * sizeof(int));
+    Max = (int **)malloc(NCUSTOMERS * sizeof(int *));
+    Allocation = (int **)malloc(NCUSTOMERS * sizeof(int *));
+    Need = (int **)malloc(NCUSTOMERS * sizeof(int *));
 
-	//prep long-term scheduler thread
-	struct LTscheduler_thread_data* LTscheduler_data = malloc(sizeof(struct LTscheduler_thread_data));
-	LTscheduler_data->job_queue = &job_dispatch_list;
-	LTscheduler_data->RT_queue = &RT_queue;
-	LTscheduler_data->UJ_queue = &UJ_queue;
-	LTscheduler_data->lock = &lock;
-	LTscheduler_data->condition = &loading_finished;
-	LTscheduler_data->max_load_time = &max_load_time;
+	//allocate Memory to Each Vector Within Matrices
+    for (int i = 0; i < NCUSTOMERS; i++) {
+        Max[i] = (int *)malloc(NRESOURCES * sizeof(int));
+        Allocation[i] = (int *)malloc(NRESOURCES * sizeof(int));
+        Need[i] = (int *)malloc(NRESOURCES * sizeof(int));
+    }
+}
 
-	//prep medium-term scheduler thread
-	struct MTscheduler_thread_data* MTscheduler_data = malloc(sizeof(struct MTscheduler_thread_data));
-	MTscheduler_data->UJ_queue = &UJ_queue;
-	MTscheduler_data->P1_queue = &P1_queue;
-	MTscheduler_data->P2_queue = &P2_queue;
-	MTscheduler_data->P3_queue = &P3_queue;
-	MTscheduler_data->flag = &DONE_FLAG;
+void outputUsageMessage(char** argv)
+{
+	char* output = calloc(512, sizeof(char));
+	output[0] = '\0';
+	strcat(output, "\033[31mUsage: ");
+	strcat(output, argv[0]);
 
-	//prep short-term scheduler thread
-	struct STscheduler_thread_data* STscheduler_data = malloc(sizeof(struct STscheduler_thread_data));
-	STscheduler_data->RT_queue = &RT_queue;
-	STscheduler_data->UJ_queue = &UJ_queue;
-	STscheduler_data->P1_queue = &P1_queue;
-	STscheduler_data->P2_queue = &P2_queue;
-	STscheduler_data->P3_queue = &P3_queue;
-	STscheduler_data->num_completed = &Ncompletedjobs;
-	STscheduler_data->flag = &DONE_FLAG;
+	char* stri = calloc(10, sizeof(char));
 
-	//create threads
-	pthread_create(&tid_LTscheduler, NULL, LTscheduler, (void *)LTscheduler_data);
-	sleep(1);
-	pthread_create(&tid_loader, NULL, load_queue_from_file, (void *)loader_data);
-	pthread_create(&tid_MTscheduler, NULL, MTscheduler, (void *)MTscheduler_data);
-	pthread_create(&tid_STscheduler, NULL, STscheduler, (void *)STscheduler_data);
+	for(int i = 0; i < NRESOURCES; i++)
+	{
+		snprintf( stri, 10, "%d", i+1 ); //convert i+1 to string
+		strcat(output, " <max resource #");
+		strcat(output, stri);
+		strcat(output, ">");
+	}
 
-	//join threads
-	pthread_join(tid_loader, NULL);
-	pthread_join(tid_LTscheduler, NULL);
-	while (Ncompletedjobs != Njobs || Njobs == 0) {sleep(1);} //wait for all jobs to complete
-	DONE_FLAG = true;
-	pthread_join(tid_MTscheduler, NULL);
-	pthread_join(tid_STscheduler, NULL);
+	free(stri);
+	strcat(output, "\n\033[0m\0");
+	printf(output);
+	free(output);
+}
 
-	//free pointers
-	free(loader_data);
-	free(LTscheduler_data);
-	free(MTscheduler_data);
-	free(STscheduler_data);
+bool toInteger(char* str, int* output) 
+{
+	int len = strlen(str);
+    for(int i = 0; i < len; i++) {
+        //check if the character is not a digit
+        if(!isdigit(str[i]))
+		{
+			printf("\033[31mError: Invalid integer \"%s\"\n\033[0m", str);
+            return false;
+		}
+    }
 
-	printf("HOST has processed all provided jobs. Goodbye!\n");
+	//convert to integer and return
+	*output = atoi(str);
+    return true;
 }
