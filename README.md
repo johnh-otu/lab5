@@ -13,18 +13,13 @@
 ├── BANKERS.exe
 ├── Makefile
 ├── README.md
-├── src
-│   ├── algorithms.c
-│   ├── algorithms.h
-│   ├── main.c
-│   ├── main.h
-│   ├── resources.c
-│   └── resources.h
-└── test
-    ├── algorithmstest.c
-    ├── algorithmstest.h
-    ├── testscript.c
-    └── testscript.h
+└── src
+    ├── algorithms.c
+    ├── algorithms.h
+    ├── main.c
+    ├── main.h
+    ├── resources.c
+    └── resources.h
 ```
 
 | File              | Description                                                                              |
