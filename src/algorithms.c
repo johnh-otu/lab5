@@ -8,7 +8,7 @@ bool isSafeState(int* Available, int** Max, int **Allocation, int **Need)
 
 
 bool safeToGrant(int* request, int* Available, int** Allocation, int** Need) {
-    // Allocate memory for temporary matrices to simulate the resource allocation
+    // Allocate memory for temporary matrices for resource allocation
     int** tempAllocation = (int**)malloc(NCUSTOMERS * sizeof(int*));
     int** tempNeed = (int**)malloc(NCUSTOMERS * sizeof(int*));
     int* tempAvailable = (int*)malloc(NRESOURCES * sizeof(int));
@@ -32,10 +32,10 @@ bool safeToGrant(int* request, int* Available, int** Allocation, int** Need) {
         tempNeed[customer_number][i] -= request[i];
     }
 
-    // Check if the resulting state is safe
+    // Check if the state is safe
     bool isSafe = isSafeState(tempAvailable, Max, tempAllocation, tempNeed);
 
-    // Free memory allocated for temporary matrices
+    // Free memory allocated
     for (int i = 0; i < NCUSTOMERS; i++) {
         free(tempAllocation[i]);
         free(tempNeed[i]);
