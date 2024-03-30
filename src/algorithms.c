@@ -1,9 +1,63 @@
 #include "algorithms.h"
 #include "main.h"
+#include <stdbool.h>
+
+// Defining constants for customers and resources
+#define NCUSTOMERS 5
+#define NRESOURCES 3
 
 bool isSafeState(int* Available, int** Max, int **Allocation, int **Need)
 {
-    return false;
+    // Initializing arrays to keep track of state
+    int work[NRESOURCES];
+    bool finish[NCUSTOMERS];
+
+    // Initialize work and finish passing arrays
+    for (int i = 0; i < NRESOURCES; ++i) {
+        work[i] = Available[i];
+    }
+    for (int i = 0; i < NCUSTOMERS; ++i) {
+        finish[i] = false;
+    }
+
+    // loop to initialize the main safe state sequence
+    int count = 0; // Counter for finished processes
+    while (count < NCUSTOMERS) {
+        bool found = false;
+        for (int i = 0; i < NCUSTOMERS; ++i) {
+            if (!finish[i]) {  // If process is not finished
+                bool can_allocate = true;
+                for (int j = 0; j < NRESOURCES; ++j) {
+                    if (Need[i][j] > work[j]) {
+                        can_allocate = false;
+                        break;
+                    }
+                }
+                // Allocating resources to this process
+                if (can_allocate) {
+                    // Allocate resources
+                    for (int j = 0; j < NRESOURCES; ++j) {
+                        work[j] += Allocation[i][j];
+                    }
+                    finish[i] = true; // The process has not finished
+                    found = true; // Updating flag
+                    count++; // Increment counter for the finished processes
+                }
+            }
+        }
+        if (!found) {
+            // Break the loop if no processes at all are to be allocated
+            break;
+        }
+    }
+
+    // When all processes have succesfully finished, the system is now in safe state
+    for (int i = 0; i < NCUSTOMERS; ++i) {
+        if (!finish[i]) {
+            return false;
+        }
+    }
+    return true;
 }
 
 
