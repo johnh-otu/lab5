@@ -2,10 +2,6 @@
 #include "main.h"
 #include <stdbool.h>
 
-// Defining constants for customers and resources
-#define NCUSTOMERS 5
-#define NRESOURCES 3
-
 bool isSafeState(int* Available, int** Max, int **Allocation, int **Need)
 {
     // Initializing arrays to keep track of state
