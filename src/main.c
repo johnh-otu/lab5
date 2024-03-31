@@ -13,6 +13,8 @@ int** Max;
 int** Allocation;
 int** Need;
 
+bool AllZeros_FLAG;
+
 int main(int argc, char** argv) 
 {
 	//check input format
@@ -60,29 +62,55 @@ void* thread_runner(void* args)
 		 * 1/5 chance -> release
 		 * 3/5 chance -> do nothing
 		*/
-		r = (rand() + customer_number) % 5;
+		r = (rand() + customer_number) % 3;
 		switch (r) {
 			case 0:
-				printf("%d: requesting resources: ", customer_number);
+				pthread_mutex_lock(&lock);
+
 				//create request
+				AllZeros_FLAG = true;
 				for (int i = 0; i < NRESOURCES; i++) { 
-					request[i] = rand() % (Need[customer_number][i] + 1); 
+					request[i] = rand() % (Need[customer_number][i] + 1);
+					if (request[i] != 0)
+						AllZeros_FLAG = false;
+				}
+				if (AllZeros_FLAG) {//remove empty requests
+					pthread_mutex_unlock(&lock);
+					break;
+				}
+				printf("%d: requesting resources: ", customer_number);
+				for (int i = 0; i < NRESOURCES; i++) {  
 					printf("%d ", request[i]);
 				}
 				printf("\n");
 				//make request
-				requestResources(Available, Max, Allocation, Need, customer_number, request, &lock);
+				requestResources(Available, Max, Allocation, Need, customer_number, request);
+
+				pthread_mutex_unlock(&lock);
 				break;
 			case 1:
-				printf("%d: releasing resources\n", customer_number);
+				pthread_mutex_lock(&lock);
+
 				//create release request
+				AllZeros_FLAG = true;
 				for (int i = 0; i < NRESOURCES; i++) { 
 					release[i] = rand() % (Allocation[customer_number][i] + 1);
+					if (release[i] != 0)
+						AllZeros_FLAG = false;
+				}
+				if (AllZeros_FLAG) { //remove empty requests
+					pthread_mutex_unlock(&lock);
+					break;
+				}
+				printf("%d: releasing resources: ", customer_number);
+				for (int i = 0; i < NRESOURCES; i++) {  
 					printf("%d ", release[i]);
 				}
 				printf("\n");
 				//release resources
-				releaseResources(Available, Max, Allocation, Need, customer_number, release, &lock);
+				releaseResources(Available, Max, Allocation, Need, customer_number, release);
+
+				pthread_mutex_unlock(&lock);
 				break;
 			default:
 				break;
@@ -128,7 +156,6 @@ int initializeVectors(char** argv)
 		
     }
 
-	outputCurrentState(Available, Max, Allocation, Need, -1);
 	return 0;
 }
 

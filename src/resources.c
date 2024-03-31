@@ -5,19 +5,15 @@
 int canGrantResources(int* Available, int** Need, int** Allocation, int customer_number, int* request);
 void grantResources(int* Available, int** Max, int** Allocation, int** Need, int customer_number, int* request);
 void releaseAllocatedResources(int* Available, int** Max, int** Allocation, int** Need, int customer_number, int* release);
-void acquireLock(pthread_mutex_t *lock);
-void releaseLock(pthread_mutex_t *lock);
 void outputCurrentState(int* Available, int** Max, int** Allocation, int** Need, int customer_number);
 
 // Request resources
-int requestResources(int* Available, int** Max, int** Need, int **Allocation, int customer_number, int* request, pthread_mutex_t *lock) {
-    acquireLock(lock);
+int requestResources(int* Available, int** Max, int **Allocation, int** Need, int customer_number, int* request) {
 
     if (!canGrantResources(Available, Need, Allocation, customer_number, request)) {
         // Request fail
         printf("\033[31m%d: RESOURCES NOT AVAILABLE!\n\033[0m", customer_number);
         outputCurrentState(Available, Max, Allocation, Need, customer_number);
-        releaseLock(lock);
         return -1;
     }
 
@@ -26,7 +22,6 @@ int requestResources(int* Available, int** Max, int** Need, int **Allocation, in
         // Request fail
         printf("\033[31m%d: WILL NOT END IN SAFE STATE!\n\033[0m", customer_number);
         outputCurrentState(Available, Max, Allocation, Need, customer_number);
-        releaseLock(lock);
         return -1;
     }
 
@@ -34,13 +29,11 @@ int requestResources(int* Available, int** Max, int** Need, int **Allocation, in
     grantResources(Available, Max, Allocation, Need, customer_number, request);
 
     // Request success
-    releaseLock(lock);
     return 0;
 }
 
 // Release resources
-int releaseResources(int* Available, int** Max, int** Need, int **Allocation, int customer_number, int* release, pthread_mutex_t *lock) {
-    acquireLock(lock);
+int releaseResources(int* Available, int** Max, int **Allocation, int** Need, int customer_number, int* release) {
 
     // Check if released resources exceed allocated resources
     int i;
@@ -49,7 +42,6 @@ int releaseResources(int* Available, int** Max, int** Need, int **Allocation, in
             // Release fail
             printf("\033[31m%d: NOT ENOUGH RESOURCES ALLOCATED!\n\033[0m", customer_number);
             outputCurrentState(Available, Max, Allocation, Need, customer_number);
-            releaseLock(lock);
             return -1;
         }
     }
@@ -58,7 +50,6 @@ int releaseResources(int* Available, int** Max, int** Need, int **Allocation, in
     releaseAllocatedResources(Available, Max, Allocation, Need, customer_number, release);
 
     // Release success
-    releaseLock(lock);
     return 0;
 }
 
@@ -97,16 +88,6 @@ void releaseAllocatedResources(int* Available, int** Max, int** Allocation, int*
     }
     printf("\033[32m%d: RESOURCES RELEASED!\n\033[0m", customer_number);
     outputCurrentState(Available, Max, Allocation, Need, customer_number);
-}
-
-// Acquire lock
-void acquireLock(pthread_mutex_t *lock) {
-    pthread_mutex_lock(lock);
-}
-
-// Release lock
-void releaseLock(pthread_mutex_t *lock) {
-    pthread_mutex_unlock(lock);
 }
 
 // Output current state
