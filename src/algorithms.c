@@ -57,7 +57,7 @@ bool isSafeState(int* Available, int** Max, int **Allocation, int **Need)
 }
 
 
-bool safeToGrant(int* request, int* Available, int** Allocation, int** Need) {
+bool safeToGrant(int* request, int customer_number, int* Available, int** Max, int** Allocation, int** Need) {
     // Allocate memory for temporary matrices for resource allocation
     int** tempAllocation = (int**)malloc(NCUSTOMERS * sizeof(int*));
     int** tempNeed = (int**)malloc(NCUSTOMERS * sizeof(int*));

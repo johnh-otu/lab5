@@ -1,7 +1,7 @@
 #include "main.h"
 #include "resources.h"
 
-void initializeVectors();
+int initializeVectors(char** argv);
 void outputUsageMessage(char** argv);
 bool toInteger(char* str, int* output);
 void* thread_runner(void* args);
@@ -21,17 +21,13 @@ int main(int argc, char** argv)
 		return -1;
 	}
 	
-	initializeVectors();
-	
-	//try setting available resources from input
-	for (int i = 0; i < NRESOURCES; i++) {
-		if (!toInteger(argv[i+1], &(Available[i])))
-			return -1; //return if not integer
+	srand(time(NULL)); //set random seed
+	if (initializeVectors(argv) < 0) { //try initializing vectors/matrices
+		return -1;
 	}
 
 	pthread_t threadids[NCUSTOMERS] = {};
 	int* args; 
-	srand(time(NULL)); //set random seed
 
 	//start threads
 	for (int i = 0; i < NCUSTOMERS; i++) {
@@ -67,18 +63,26 @@ void* thread_runner(void* args)
 		r = (rand() + customer_number) % 5;
 		switch (r) {
 			case 0:
-				printf("%d: requesting resources\n", customer_number);
+				printf("%d: requesting resources: ", customer_number);
 				//create request
-				for (int i = 0; i < NRESOURCES; i++) { request[i] = rand() % (Need[customer_number][i] + 1); }
+				for (int i = 0; i < NRESOURCES; i++) { 
+					request[i] = rand() % (Need[customer_number][i] + 1); 
+					printf("%d ", request[i]);
+				}
+				printf("\n");
 				//make request
-				requestResources(Available, Max, Allocation, Need, customer_number, request, lock);
+				requestResources(Available, Max, Allocation, Need, customer_number, request, &lock);
 				break;
 			case 1:
 				printf("%d: releasing resources\n", customer_number);
 				//create release request
-				for (int i = 0; i < NRESOURCES; i++) { release[i] = rand() % (Allocation[customer_number][i] + 1); }
+				for (int i = 0; i < NRESOURCES; i++) { 
+					release[i] = rand() % (Allocation[customer_number][i] + 1);
+					printf("%d ", release[i]);
+				}
+				printf("\n");
 				//release resources
-				releaseResources(Available, Max, Allocation, Need, customer_number, release, lock);
+				releaseResources(Available, Max, Allocation, Need, customer_number, release, &lock);
 				break;
 			default:
 				break;
@@ -89,7 +93,7 @@ void* thread_runner(void* args)
 	return NULL;
 }
 
-void initializeVectors()
+int initializeVectors(char** argv)
 {
 	//allocate Memory to Each Vector/Matrix
 	Available = (int *)malloc(NRESOURCES * sizeof(int));
@@ -97,12 +101,35 @@ void initializeVectors()
     Allocation = (int **)malloc(NCUSTOMERS * sizeof(int *));
     Need = (int **)malloc(NCUSTOMERS * sizeof(int *));
 
+	//try setting available resources from input
+	for (int i = 0; i < NRESOURCES; i++) {
+		if (!toInteger(argv[i+1], &(Available[i])))
+			return -1; //return if not integer
+	}
+
 	//allocate Memory to Each Vector Within Matrices
     for (int i = 0; i < NCUSTOMERS; i++) {
         Max[i] = (int *)malloc(NRESOURCES * sizeof(int));
         Allocation[i] = (int *)malloc(NRESOURCES * sizeof(int));
         Need[i] = (int *)malloc(NRESOURCES * sizeof(int));
+
+		//set matrix values for current row "i"
+		for (int j = 0; j < NRESOURCES; j++)
+		{
+			if (Available[j] > 0) {
+				Max[i][j] = rand() % Available[j];
+			}
+			else {
+				Max[i][j] = 0;
+			}
+			Need[i][j] = Max[i][j];
+			Allocation[i][j] = 0;
+		}
+		
     }
+
+	outputCurrentState(Available, Max, Allocation, Need, -1);
+	return 0;
 }
 
 void outputUsageMessage(char** argv)
