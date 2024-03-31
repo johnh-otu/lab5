@@ -24,7 +24,9 @@ int main(int argc, char** argv)
 	}
 	
 	srand(time(NULL)); //set random seed
-	if (initializeVectors(argv) < 0) { //try initializing vectors/matrices
+
+	//try initializing vectors/matrices
+	if (initializeVectors(argv) < 0) { 
 		return -1;
 	}
 
@@ -47,6 +49,7 @@ int main(int argc, char** argv)
 
 void* thread_runner(void* args)
 {
+	//set up variables
 	int* intargs = (int*)args;
 	int customer_number = *intargs;
 	int r;
@@ -55,66 +58,87 @@ void* thread_runner(void* args)
 	
 	free(args);
 
+	//loop continuously
 	while(true) 
 	{
+		r = (rand() + customer_number) % 4;
 		/*
-		 * 1/5 chance -> request
-		 * 1/5 chance -> release
-		 * 3/5 chance -> do nothing
+		 * 1/4 chance -> request
+		 * 1/4 chance -> release
+		 * 2/4 chance -> do nothing
 		*/
-		r = (rand() + customer_number) % 3;
+		
 		switch (r) {
 			case 0:
+
+				//acquire lock
 				pthread_mutex_lock(&lock);
 
 				//create request
 				AllZeros_FLAG = true;
 				for (int i = 0; i < NRESOURCES; i++) { 
-					request[i] = rand() % (Need[customer_number][i] + 1);
+					request[i] = rand() % (Need[customer_number][i] + 1); //random % Need + 1 ----> [0,Need]
 					if (request[i] != 0)
 						AllZeros_FLAG = false;
 				}
-				if (AllZeros_FLAG) {//remove empty requests
+
+				//remove empty requests
+				if (AllZeros_FLAG) {
 					pthread_mutex_unlock(&lock);
 					break;
 				}
+				
+				//print request details
 				printf("%d: requesting resources: ", customer_number);
 				for (int i = 0; i < NRESOURCES; i++) {  
 					printf("%d ", request[i]);
 				}
 				printf("\n");
-				//make request
+
+				//send request to banker
 				requestResources(Available, Max, Allocation, Need, customer_number, request);
 
+				//release lock
 				pthread_mutex_unlock(&lock);
 				break;
+
 			case 1:
+
+				//acquire lock
 				pthread_mutex_lock(&lock);
 
 				//create release request
 				AllZeros_FLAG = true;
 				for (int i = 0; i < NRESOURCES; i++) { 
-					release[i] = rand() % (Allocation[customer_number][i] + 1);
+					release[i] = rand() % (Allocation[customer_number][i] + 1); //random % Allocation + 1 ----> [0,Allocation]
 					if (release[i] != 0)
 						AllZeros_FLAG = false;
 				}
-				if (AllZeros_FLAG) { //remove empty requests
+
+				//remove empty requests
+				if (AllZeros_FLAG) { 
 					pthread_mutex_unlock(&lock);
 					break;
 				}
+
+				//print release request details
 				printf("%d: releasing resources: ", customer_number);
 				for (int i = 0; i < NRESOURCES; i++) {  
 					printf("%d ", release[i]);
 				}
 				printf("\n");
-				//release resources
+
+				//ask banker to release resources
 				releaseResources(Available, Max, Allocation, Need, customer_number, release);
 
+				//release lock
 				pthread_mutex_unlock(&lock);
 				break;
+
 			default:
-				break;
+				break; //no action
 		}
+
 		sleep(1);
 	}
 
@@ -163,6 +187,7 @@ void outputUsageMessage(char** argv)
 {
 	char* output = calloc(512, sizeof(char));
 	output[0] = '\0';
+	
 	strcat(output, "\033[31mUsage: ");
 	strcat(output, argv[0]);
 

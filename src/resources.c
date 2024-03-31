@@ -93,30 +93,37 @@ void releaseAllocatedResources(int* Available, int** Max, int** Allocation, int*
 // Output current state
 void outputCurrentState(int* Available, int** Max, int** Allocation, int** Need, int customer_number)
 {
-    printf("%d: Available - ", customer_number);
+    //print contents of Available vector
+    printf("Available: ");
     for (int i = 0; i < NRESOURCES; i++) {
         printf("%d ", Available[i]);
     }
     printf("\n");
 
-    printf("%d: Max:\n", customer_number);
+    //print contents of Max matrix
+    printf("Max:\n");
     for (int i = 0; i < NCUSTOMERS; i++) {
+        printf("%d: ", i);
         for (int j = 0; j < NRESOURCES; j++) {
             printf("%d ", Max[i][j]);
         }
         printf("\n");
     }
 
-    printf("%d: Allocation:\n", customer_number);
+    //print contents of Allocation matrix
+    printf("Allocation:\n");
     for (int i = 0; i < NCUSTOMERS; i++) {
+        printf("%d: ", i);
         for (int j = 0; j < NRESOURCES; j++) {
             printf("%d ", Allocation[i][j]);
         }
         printf("\n");
     }
 
-    printf("%d: Need:\n", customer_number);
+    //print contents of Need matrix
+    printf("Need:\n");
     for (int i = 0; i < NCUSTOMERS; i++) {
+        printf("%d: ", i);
         for (int j = 0; j < NRESOURCES; j++) {
             printf("%d ", Need[i][j]);
         }
